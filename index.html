@@ -246,9 +246,9 @@ const auth=firebase.auth();
 const db=firebase.firestore();
 const storage=firebase.storage();
 
-const loginPage=page-login;
-const listPage=page-list;
-const chatPage=page-chat;
+const loginPage = document.getElementById("page-login");
+const listPage  = document.getElementById("page-list");
+const chatPage  = document.getElementById("page-chat");
 
 function showPage(p){
   [loginPage,listPage,chatPage].forEach(x=>x.classList.remove("active"));
