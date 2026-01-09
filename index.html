@@ -14,11 +14,11 @@
 body{background:#f0f2f5;color:#111;overflow:hidden}
 .page{position:fixed;inset:0;display:none;flex-direction:column;transition:all .4s ease;}
 .page.active{display:flex;opacity:1;transform:translateX(0);}
-.page.animate-in{opacity:0;transform:translateY(50px);}
 button{cursor:pointer;transition:all .2s ease;}
 button:hover{transform:scale(1.05);box-shadow:0 5px 15px rgba(0,0,0,0.2);}
 button:active{transform:scale(0.95);}
 img{display:block;}
+
 /* تسجيل الدخول */
 #page-login{justify-content:center;align-items:center}
 .login-box{width:90%;max-width:360px;background:white;padding:30px;border-radius:15px;box-shadow:0 10px 25px rgba(0,0,0,0.2);text-align:center;transform:translateY(-20px);transition:all .5s ease;}
@@ -142,6 +142,7 @@ const profilePage=document.getElementById("profilePage");
 const profilePic=document.getElementById("profilePic");
 const profileName=document.getElementById("profileName");
 let currentUser=null,chattingWith=null,imageFile=null;
+let loadedUsers={}; // لتجنب تكرار الحسابات
 
 function showPage(p){[loginPage,listPage,chatPage].forEach(x=>x.classList.remove("active"));p.classList.add("active");}
 
@@ -163,19 +164,16 @@ function loginGoogle(){
 
 function loadUsers(){
   const list=document.getElementById("list");
-  const addedUsers = new Set(); // <-- حل تكرار الحسابات
-  list.innerHTML="";
   db.collection("users").onSnapshot(s=>{
-    list.innerHTML="";
     s.forEach(d=>{
-      if(d.id!==currentUser.uid && !addedUsers.has(d.id)){
+      if(d.id!==currentUser.uid && !loadedUsers[d.id]){
         const data=d.data();
         const div=document.createElement("div");
         div.className="chat-item";
         div.innerHTML=`<div class="avatar" style="background-image:url('${data.photo}')"></div><div><div class="chat-name">${data.name}<span class='unread' id='unread_${d.id}'>0</span></div></div>`;
         div.onclick=()=>openChat(d.id);
         list.appendChild(div);
-        addedUsers.add(d.id);
+        loadedUsers[d.id]=true;
       }
     });
   });
