@@ -1,244 +1,162 @@
-<!DOCTYPE html>
-<html lang="ar">
+<!DOCTYPE html><html lang="ar">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MyChatApp</title>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-
-<style>
+<title>MyChatApp</title><!-- Firebase --><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script><style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial;background:#0e1621;color:white;overflow:hidden;}
-.page{position:fixed;inset:0;display:none;flex-direction:column;}
-.page.active{display:flex;}
-.login-box{width:90%;max-width:360px;background:#17212b;padding:25px;border-radius:12px;text-align:center;margin:auto}
-.login-box button,input{width:100%;padding:12px;margin-top:10px;border:none;border-radius:8px}
-button{background:#2aabee;color:white}
+body{margin:0;font-family:Arial;background:#0e1621;color:white;overflow:hidden}
+.page{position:fixed;inset:0;display:none;flex-direction:column}
+.page.active{display:flex}
 
-/* القوائم والشات */
+/* تسجيل الدخول */
+#page-login{justify-content:center;align-items:center}
+.login-box{width:90%;max-width:360px;background:#17212b;padding:25px;border-radius:12px;text-align:center}
+.login-box button{width:100%;padding:12px;border:none;border-radius:8px;background:#2aabee;color:white;font-size:16px}
+
+/* شريط علوي */
 .top{height:55px;background:#17212b;display:flex;align-items:center;justify-content:space-between;padding:0 12px}
-#list{flex:1;overflow:auto}
+.top span{cursor:pointer}
+
+/* قائمة المحادثات */
+#list{flex:1;overflow-y:auto}
 .chat-item{display:flex;align-items:center;padding:10px;border-bottom:1px solid #1f2c3a;cursor:pointer}
-.avatar{width:45px;height:45px;border-radius:50%;background:#2aabee;margin-left:10px}
-#messages{flex:1;overflow:auto;padding:10px}
-.msg{max-width:75%;padding:8px;margin:5px 0;border-radius:8px;background:#182533;word-wrap:break-word;}
+.avatar{width:45px;height:45px;border-radius:50%;background:#2aabee;margin-left:10px;object-fit:cover}
+.chat-name{font-weight:bold}
+.unread{background:red;color:white;border-radius:50%;padding:2px 6px;margin-left:5px;font-size:12px}
+.last-seen{font-size:12px;color:#888}
+
+/* الشات */
+#messages{flex:1;overflow-y:auto;padding:10px}
+.msg{max-width:75%;padding:8px;margin:5px 0;border-radius:8px;background:#182533;word-break:break-word}
 .me{background:#2aabee;margin-left:auto}
 .msg img{max-width:100%;border-radius:8px}
 
 /* إدخال */
-.input-bar{display:flex;padding:8px;background:#17212b;gap:5px}
+.input-bar{background:#17212b;padding:8px;display:flex;gap:5px}
 .input-bar input[type=text]{flex:1;padding:10px;border:none;border-radius:8px}
-
-/* معاينة صورة */
+.input-bar button{border:none;border-radius:8px;background:#2aabee;color:white;padding:0 15px}
 #preview{display:flex;padding:5px}
-#preview img{width:70px;border-radius:8px}
+#preview img{width:70px;border-radius:8px;object-fit:cover}
 
 /* إعدادات */
-#settingsPanel{position:fixed;top:60px;right:10px;background:#17212b;border-radius:10px;padding:10px;display:none}
-#settingsPanel button{background:none;border:none;color:white;display:block;margin:5px 0}
-
-/* ملف شخصي */
-#profilePage{padding:20px;text-align:center}
-.profile-img{width:100px;height:100px;border-radius:50%;background:#2aabee;margin:auto;background-size:cover;background-position:center}
-textarea,input{width:100%;margin-top:10px;padding:10px;border:none;border-radius:8px}
-.danger{background:#f55;color:white}
-</style>
-</head>
-
-<body>
-
-<!-- صفحة تسجيل الدخول -->
-<div id="page-login" class="page active">
+#settingsPanel{position:fixed;top:60px;right:10px;background:#17212b;border-radius:10px;padding:10px;display:none;flex-direction:column}
+#settingsPanel button{background:none;border:none;color:#f55;margin:5px 0;text-align:left}
+#profilePic{width:45px;height:45px;border-radius:50%;object-fit:cover}
+</style></head>
+<body><!-- صفحة تسجيل الدخول --><div id="page-login" class="page active">
   <div class="login-box">
     <h3>تسجيل الدخول</h3>
     <button onclick="loginGoogle()">تسجيل دخول Google</button>
   </div>
-</div>
-
-<!-- صفحة إدخال الاسم لأول مرة -->
-<div id="page-setup-name" class="page">
-  <div class="login-box">
-    <h3>أدخل اسمك</h3>
-    <input id="nameInput" placeholder="اسمك">
-    <button onclick="submitName()">حفظ الاسم</button>
-  </div>
-</div>
-
-<!-- صفحة قائمة المحادثات -->
-<div id="page-list" class="page">
+</div><!-- صفحة قائمة المحادثات --><div id="page-list" class="page">
   <div class="top">
     <strong>MyChatApp</strong>
     <span onclick="toggleSettings()">⚙️</span>
   </div>
   <div id="list"></div>
-</div>
-
-<!-- صفحة الشات -->
-<div id="page-chat" class="page">
+</div><!-- صفحة الشات --><div id="page-chat" class="page">
   <div class="top">
-    <span onclick="showPage(listPage)">⬅</span>
+    <span onclick="showList()">⬅</span>
     <strong>الدردشة</strong>
   </div>
   <div id="messages"></div>
+  <div id="preview"></div>
   <div class="input-bar">
     <input type="file" id="imgInput" hidden accept="image/*">
     <button onclick="imgInput.click()">📷</button>
     <input type="text" id="msg" placeholder="اكتب رسالة...">
     <button onclick="send()">➤</button>
   </div>
-  <div id="preview"></div>
-</div>
-
-<!-- صفحة الملف الشخصي -->
-<div id="page-profile" class="page">
-  <div class="top">
-    <span onclick="showPage(listPage)">⬅</span>
-    <strong>ملفي الشخصي</strong>
+</div><!-- الإعدادات --><div id="settingsPanel">
+  <div style="display:flex;align-items:center;gap:5px;margin-bottom:10px">
+    <img id="profilePic" src="#">
+    <span id="profileName"></span>
   </div>
-  <div id="profilePage">
-    <div class="profile-img" id="profileImg"></div>
-    <input type="file" id="profileImage">
-    <input id="profileName" placeholder="الاسم">
-    <textarea id="profileBio" placeholder="البايو"></textarea>
-    <button onclick="saveProfile()">حفظ</button>
-    <button class="danger" onclick="deleteAccount()">حذف حسابي</button>
-  </div>
-</div>
-
-<!-- الإعدادات -->
-<div id="settingsPanel">
-  <button onclick="openProfile()">ملفي الشخصي</button>
+  <button onclick="editProfile()">تعديل الملف الشخصي</button>
   <button onclick="logout()">تسجيل الخروج</button>
-</div>
-
-<script>
+</div><script>
 firebase.initializeApp({
   apiKey:"AIzaSyAdnzO83yV5sqL6TBrhStdyoxdoKlcR6yY",
   authDomain:"mychatapp-29f33.firebaseapp.com",
   projectId:"mychatapp-29f33",
   storageBucket:"mychatapp-29f33.appspot.com"
 });
-
 const auth=firebase.auth();
 const db=firebase.firestore();
 const storage=firebase.storage();
 
-/* صفحات */
 const loginPage=document.getElementById("page-login");
-const setupNamePage=document.getElementById("page-setup-name");
 const listPage=document.getElementById("page-list");
 const chatPage=document.getElementById("page-chat");
-const profilePage=document.getElementById("page-profile");
-
-/* عناصر */
-const list=document.getElementById("list");
-const profileName=document.getElementById("profileName");
-const profileBio=document.getElementById("profileBio");
-const profileImg=document.getElementById("profileImg");
-const profileImage=document.getElementById("profileImage");
-const imgInput=document.getElementById("imgInput");
-const msg=document.getElementById("msg");
-const preview=document.getElementById("preview");
 const settingsPanel=document.getElementById("settingsPanel");
+const profilePic=document.getElementById("profilePic");
+const profileName=document.getElementById("profileName");
+let currentUser=null, chattingWith=null, imageFile=null;
 
-/* متغيرات */
-let currentUser=null;
-let chattingWith=null;
-let imageFile=null;
+function showPage(p){[loginPage,listPage,chatPage].forEach(x=>x.classList.remove("active"));p.classList.add("active")}
 
-/* إدارة الصفحات */
-function showPage(p){
-  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
-  p.classList.add("active");
-}
-
-/* تسجيل دخول Google */
 function loginGoogle(){
   const provider=new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider).then(r=>{
     currentUser=r.user;
-    checkUser();
-  }).catch(console.error);
-}
-
-/* تحقق المستخدم */
-function checkUser(){
-  db.collection("users").doc(currentUser.uid).get().then(doc=>{
-    if(!doc.exists || !doc.data().name){
-      showPage(setupNamePage);
-    } else {
-      showPage(listPage);
-      loadUsers();
-    }
-  });
-}
-
-/* حفظ الاسم لأول مرة */
-function submitName(){
-  const name=nameInput.value.trim();
-  if(!name){alert("اكتب اسمك");return;}
-  db.collection("users").doc(currentUser.uid).set({name,bio:"",photo:""},{merge:true}).then(()=>{
+    db.collection("users").doc(currentUser.uid).set({
+      name:currentUser.displayName,
+      photo:currentUser.photoURL,
+      bio:""
+    },{merge:true});
+    profilePic.src=currentUser.photoURL;
+    profileName.innerText=currentUser.displayName;
     showPage(listPage);
     loadUsers();
   });
 }
 
-/* تحميل المستخدمين */
 function loadUsers(){
+  const list=document.getElementById("list");
   list.innerHTML="";
   db.collection("users").onSnapshot(s=>{
     list.innerHTML="";
     s.forEach(d=>{
       if(d.id!==currentUser.uid){
+        const data=d.data();
         const div=document.createElement("div");
         div.className="chat-item";
-        div.innerHTML=`<div class="avatar"></div>${d.data().name}`;
-        div.onclick=()=>{chattingWith=d.id;showPage(chatPage);loadMessages()};
+        div.innerHTML=`<div class="avatar" style="background-image:url('${data.photo}')"></div><div><div class="chat-name">${data.name}<span class='unread' id='unread_${d.id}'>0</span></div><div class='last-seen' id='last_${d.id}'>آخر ظهور: --</div></div>`;
+        div.onclick=()=>openChat(d.id);
         list.appendChild(div);
       }
     });
   });
 }
 
-/* إرسال رسالة */
-function send(){
-  if(!msg.value && !imageFile) return;
-  const chatId=currentUser.uid>chattingWith?currentUser.uid+"_"+chattingWith:chattingWith+"_"+currentUser.uid;
+function openChat(uid){
+  chattingWith=uid;
+  showPage(chatPage);
+  loadMessages();
+}
+function showList(){showPage(listPage)}
 
+function send(){
+  if(!msg.value&&!imageFile)return;
+  const chatId=currentUser.uid>chattingWith?currentUser.uid+"_"+chattingWith:chattingWith+"_"+currentUser.uid;
   if(imageFile){
     const ref=storage.ref("images/"+Date.now());
-    const imgLocal = preview.innerHTML; // معاينة محلية
-    messages.innerHTML+=imgLocal; // عرض مؤقت
     ref.put(imageFile).then(()=>ref.getDownloadURL().then(url=>{
       db.collection("chats").doc(chatId).collection("messages").add({
-        from:currentUser.uid,
-        image:url,
-        time:firebase.firestore.FieldValue.serverTimestamp()
+        from:currentUser.uid,image:url,time:firebase.firestore.FieldValue.serverTimestamp()
       });
     }));
     imageFile=null;
     preview.innerHTML="";
   }
-
   if(msg.value){
-    const textLocal = `<div class="msg me">${msg.value}</div>`;
-    messages.innerHTML+=textLocal;
     db.collection("chats").doc(chatId).collection("messages").add({
-      from:currentUser.uid,
-      text:msg.value,
-      time:firebase.firestore.FieldValue.serverTimestamp()
+      from:currentUser.uid,text:msg.value,time:firebase.firestore.FieldValue.serverTimestamp()
     });
     msg.value="";
   }
-  messages.scrollTop = messages.scrollHeight;
 }
 
-/* تحميل الرسائل */
 function loadMessages(){
   messages.innerHTML="";
   const chatId=currentUser.uid>chattingWith?currentUser.uid+"_"+chattingWith:chattingWith+"_"+currentUser.uid;
@@ -248,85 +166,40 @@ function loadMessages(){
       const m=d.data();
       const div=document.createElement("div");
       div.className="msg"+(m.from===currentUser.uid?" me":"");
-      if(m.text) div.innerText=m.text;
-      if(m.image) div.innerHTML=`<img src="${m.image}">`;
+      if(m.text)div.innerText=m.text;
+      if(m.image)div.innerHTML=`<img src='${m.image}' style='max-width:300px'>`;
       messages.appendChild(div);
     });
     messages.scrollTop=messages.scrollHeight;
   });
-};
+}
 
-/* معاينة صورة الشات قبل الإرسال */
 imgInput.onchange=e=>{
   imageFile=e.target.files[0];
   const r=new FileReader();
-  r.onload=()=>preview.innerHTML=`<img src="${r.result}">`;
+  r.onload=()=>preview.innerHTML=`<img src='${r.result}' style='border-radius:8px;max-width:70px'>`;
   r.readAsDataURL(imageFile);
 };
 
-/* معاينة صورة الملف الشخصي قبل الحفظ */
-profileImage.onchange = e => {
-  const file = e.target.files[0];
-  if(file){
-    const reader = new FileReader();
-    reader.onload = () => {
-      profileImg.style.backgroundImage = `url(${reader.result})`;
-      profileImg.style.backgroundSize = 'cover';
-      profileImg.style.backgroundPosition = 'center';
-    };
-    reader.readAsDataURL(file);
-  }
-};
+function toggleSettings(){settingsPanel.style.display=settingsPanel.style.display==="block"?"none":"block"}
 
-/* إعدادات */
-function toggleSettings(){settingsPanel.style.display=settingsPanel.style.display==="block"?"none":"block";}
-function openProfile(){
-  settingsPanel.style.display="none";
-  db.collection("users").doc(currentUser.uid).get().then(doc=>{
-    if(doc.exists){
-      profileName.value=doc.data().name||"";
-      profileBio.value=doc.data().bio||"";
-      if(doc.data().photo) profileImg.style.backgroundImage=`url(${doc.data().photo})`;
-    }
-  });
-  showPage(profilePage);
+function editProfile(){
+  const newName=prompt("ادخل اسم جديد",profileName.innerText);
+  const newBio=prompt("ادخل البايو","");
+  db.collection("users").doc(currentUser.uid).update({name:newName,bio:newBio});
+  profileName.innerText=newName;
 }
 
-/* حفظ الملف الشخصي */
-function saveProfile(){
-  const file = profileImage.files[0];
-  if(file){
-    const ref=storage.ref("profile/"+currentUser.uid+"_"+Date.now());
-    ref.put(file).then(()=>ref.getDownloadURL().then(url=>{
-      db.collection("users").doc(currentUser.uid).update({
-        name:profileName.value,
-        bio:profileBio.value,
-        photo:url
-      });
-      profileImg.style.backgroundImage=`url(${url})`;
-      alert("تم الحفظ");
-    }));
-  } else {
-    db.collection("users").doc(currentUser.uid).update({
-      name:profileName.value,
-      bio:profileBio.value
-    });
-    alert("تم الحفظ");
-  }
-}
+function logout(){auth.signOut().then(()=>location.reload())}
 
-/* حذف الحساب */
-function deleteAccount(){
-  if(confirm("تأكيد حذف الحساب؟")){
-    db.collection("users").doc(currentUser.uid).delete().then(()=>{
-      currentUser.delete().then(()=>location.reload());
-    });
-  }
-}
-
-/* تسجيل خروج */
-function logout(){auth.signOut().then(()=>location.reload());}
-</script>
-
-</body>
+auth.onAuthStateChanged(user=>{
+  if(user){
+    currentUser=user;
+    profilePic.src=user.photoURL;
+    profileName.innerText=user.displayName;
+    showPage(listPage);
+    loadUsers();
+  }else showPage(loginPage);
+});
+</script></body>
 </html>
