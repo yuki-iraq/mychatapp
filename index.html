@@ -8,312 +8,126 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <style>
-*{box-sizing:border-box;font-family:Arial}
+*{box-sizing:border-box;font-family:"Segoe UI",sans-serif}
 body{
   margin:0;
-  background:linear-gradient(160deg,#0e1621,#1b2a3a);
-  color:white;
-  overflow:hidden
+  background:#f2f4f8;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
-.page{
-  position:fixed;inset:0;
-  display:none;
-  flex-direction:column;
-  animation:fade .3s ease
-}
-.page.active{display:flex}
-@keyframes fade{from{opacity:0}to{opacity:1}}
 
-button{
-  cursor:pointer;
-  transition:.2s;
-}
-button:active{transform:scale(.95)}
-button:hover{opacity:.9}
-
-/* تسجيل الدخول */
-#page-login{justify-content:center;align-items:center}
-.login-box{
-  background:#17212b;
-  padding:30px;
-  border-radius:18px;
+/* كرت 3D */
+.card{
+  background:white;
   width:90%;
   max-width:360px;
+  padding:30px;
+  border-radius:20px;
+  box-shadow:
+    0 15px 30px rgba(0,0,0,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.8);
   text-align:center;
-  box-shadow:0 10px 30px rgba(0,0,0,.4)
+  animation:float 1s ease;
 }
-.login-box button{
+
+@keyframes float{
+  from{transform:translateY(20px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+
+h2{
+  margin-bottom:20px;
+  color:#222;
+}
+
+/* زر Google */
+.google-btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
   width:100%;
   padding:14px;
   border:none;
-  border-radius:12px;
-  background:#2aabee;
+  border-radius:14px;
+  font-size:16px;
+  cursor:pointer;
+  background:linear-gradient(145deg,#4facfe,#00f2fe);
   color:white;
-  font-size:16px
+  box-shadow:0 8px 20px rgba(79,172,254,0.4);
+  transition:all .2s ease;
 }
 
-/* شريط علوي */
-.top{
-  height:55px;
-  background:#17212b;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 14px;
-  box-shadow:0 3px 10px rgba(0,0,0,.4)
+.google-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 25px rgba(79,172,254,0.5);
 }
-.top span{font-size:22px}
 
-/* قائمة المحادثات */
-#list{flex:1;overflow-y:auto;padding:8px}
-.chat-item{
-  background:#17212b;
-  margin-bottom:8px;
-  padding:12px;
-  border-radius:14px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  transition:.2s
+.google-btn:active{
+  transform:translateY(1px);
+  box-shadow:0 6px 15px rgba(79,172,254,0.4);
 }
-.chat-item:hover{background:#1f2f40}
-.avatar{
-  width:48px;height:48px;
+
+.google-icon{
+  background:white;
+  color:#555;
+  width:22px;
+  height:22px;
   border-radius:50%;
-  background-size:cover;
-  background-position:center
-}
-.unread{
-  background:red;
-  padding:2px 6px;
-  border-radius:20px;
-  font-size:12px;
-  margin-right:6px
-}
-
-/* الشات */
-#messages{flex:1;overflow-y:auto;padding:10px}
-.msg{
-  max-width:75%;
-  padding:10px;
-  margin:6px 0;
-  border-radius:14px;
-  background:#1c2f42
-}
-.me{background:#2aabee;margin-left:auto}
-.msg img{max-width:240px;border-radius:12px}
-
-/* إدخال */
-.input-bar{
   display:flex;
-  gap:6px;
-  padding:8px;
-  background:#17212b
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
 }
-.input-bar input{
-  flex:1;
-  padding:10px;
-  border:none;
-  border-radius:12px
-}
-.input-bar button{
-  background:#2aabee;
-  border:none;
-  border-radius:12px;
-  padding:0 14px;
-  color:white
-}
-
-/* إعدادات */
-#settingsPanel{
-  position:fixed;
-  top:60px;
-  right:10px;
-  background:#17212b;
-  border-radius:14px;
-  padding:12px;
+.loading{
+  margin-top:15px;
+  color:#666;
   display:none;
-  width:200px
-}
-#settingsPanel button{
-  width:100%;
-  background:none;
-  border:none;
-  color:white;
-  text-align:right;
-  padding:10px
-}
-
-/* ملف شخصي */
-#page-profile{
-  padding:20px;
-  gap:10px
-}
-#page-profile img{
-  width:100px;height:100px;
-  border-radius:50%;
-  margin:auto;
-  object-fit:cover
-}
-#page-profile input,#page-profile textarea{
-  width:100%;
-  padding:10px;
-  border:none;
-  border-radius:12px
-}
-.save-msg{
-  color:#4caf50;
-  text-align:center;
-  display:none
-}
-
-/* اتصال */
-.call-bar{
-  display:flex;
-  gap:10px
-}
-.call-bar button{
-  flex:1;
-  background:#2aabee;
-  border:none;
-  border-radius:12px;
-  padding:10px;
-  color:white
 }
 </style>
 </head>
 
 <body>
 
-<!-- تسجيل الدخول -->
-<div id="page-login" class="page active">
-  <div class="login-box">
-    <h3>تسجيل الدخول</h3>
-    <button onclick="loginGoogle()">تسجيل دخول Google</button>
-  </div>
-</div>
-
-<!-- قائمة -->
-<div id="page-list" class="page">
-  <div class="top">
-    <strong>MyChatApp</strong>
-    <span onclick="toggleSettings()">⚙️</span>
-  </div>
-  <div id="list"></div>
-</div>
-
-<!-- شات -->
-<div id="page-chat" class="page">
-  <div class="top">
-    <span onclick="showList()">⬅</span>
-    <strong>الدردشة</strong>
-  </div>
-
-  <div class="call-bar">
-    <button onclick="startCall('audio')">📞 اتصال صوتي</button>
-    <button onclick="startCall('video')">🎥 مكالمة فيديو</button>
-  </div>
-
-  <div id="messages"></div>
-
-  <div class="input-bar">
-    <input type="text" id="msg" placeholder="اكتب رسالة...">
-    <button onclick="send()">➤</button>
-  </div>
-</div>
-
-<!-- ملف شخصي -->
-<div id="page-profile" class="page">
-  <div class="top">
-    <span onclick="showList()">⬅</span>
-    <strong>الملف الشخصي</strong>
-  </div>
-
-  <img id="profileImg">
-  <input type="file" id="profileImgInput">
-  <input type="text" id="profileNameInput" placeholder="الاسم">
-  <textarea id="profileBioInput" placeholder="البايو"></textarea>
-
-  <button onclick="saveProfile()">💾 حفظ</button>
-  <div class="save-msg" id="saveMsg">✔ تم حفظ التغييرات</div>
-</div>
-
-<!-- إعدادات -->
-<div id="settingsPanel">
-  <button onclick="openProfile()">👤 الملف الشخصي</button>
-  <button onclick="logout()">🚪 تسجيل الخروج</button>
+<div class="card">
+  <h2>تسجيل الدخول</h2>
+  <button class="google-btn" onclick="loginGoogle()">
+    <div class="google-icon">G</div>
+    تسجيل الدخول عبر Google
+  </button>
+  <div class="loading" id="loading">جارٍ تسجيل الدخول...</div>
 </div>
 
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyAdnzO83yV5sqL6TBrhStdyoxdoKlcR6yY",
   authDomain:"mychatapp-29f33.firebaseapp.com",
-  projectId:"mychatapp-29f33",
-  storageBucket:"mychatapp-29f33.appspot.com"
+  projectId:"mychatapp-29f33"
 });
 
-const auth=firebase.auth(),db=firebase.firestore();
-let currentUser=null;
-
-const pages={
- login:page-login,
- list:page-list,
- chat:page-chat,
- profile:page-profile
-};
-
-function showPage(p){
- Object.values(pages).forEach(x=>x.classList.remove("active"));
- p.classList.add("active");
-}
+const auth = firebase.auth();
 
 function loginGoogle(){
- const p=new firebase.auth.GoogleAuthProvider();
- auth.signInWithPopup(p);
+  document.getElementById("loading").style.display="block";
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithRedirect(provider);
 }
 
-auth.onAuthStateChanged(u=>{
- if(u){
-  currentUser=u;
-  db.collection("users").doc(u.uid).set({
-   name:u.displayName,
-   photo:u.photoURL
-  },{merge:true});
-  showPage(pages.list);
- }
+// معالجة الرجوع من Google
+auth.getRedirectResult().then(result=>{
+  if(result.user){
+    // تسجيل ناجح
+    window.location.href="chat.html"; // أو نفس الصفحة إذا تحب
+  }
+}).catch(err=>{
+  console.log(err);
+  document.getElementById("loading").innerText="خطأ بالتسجيل";
 });
-
-function toggleSettings(){
- settingsPanel.style.display=settingsPanel.style.display==="block"?"none":"block";
-}
-
-function openProfile(){
- profileImg.src=currentUser.photoURL;
- profileNameInput.value=currentUser.displayName;
- showPage(pages.profile);
- settingsPanel.style.display="none";
-}
-
-function saveProfile(){
- db.collection("users").doc(currentUser.uid).update({
-  name:profileNameInput.value,
-  bio:profileBioInput.value
- });
- saveMsg.style.display="block";
- setTimeout(()=>saveMsg.style.display="none",2000);
-}
-
-function startCall(type){
- alert(type==="audio"?"📞 بدء اتصال صوتي":"🎥 بدء مكالمة فيديو");
-}
-
-function logout(){
- auth.signOut().then(()=>location.reload());
-}
 </script>
+
 </body>
 </html>
