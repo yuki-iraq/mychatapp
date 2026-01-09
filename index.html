@@ -14,6 +14,7 @@
 body{background:#f0f2f5;color:#111;overflow:hidden}
 .page{position:fixed;inset:0;display:none;flex-direction:column;transition:all .4s ease;}
 .page.active{display:flex;opacity:1;transform:translateX(0);}
+.page.animate-in{opacity:0;transform:translateY(50px);}
 button{cursor:pointer;transition:all .2s ease;}
 button:hover{transform:scale(1.05);box-shadow:0 5px 15px rgba(0,0,0,0.2);}
 button:active{transform:scale(0.95);}
@@ -24,6 +25,7 @@ img{display:block;}
 .login-box{width:90%;max-width:360px;background:white;padding:30px;border-radius:15px;box-shadow:0 10px 25px rgba(0,0,0,0.2);text-align:center;transform:translateY(-20px);transition:all .5s ease;}
 .login-box h3{margin-bottom:20px;color:#2aabee;}
 .login-box button{width:100%;padding:12px;border:none;border-radius:12px;background:#2aabee;color:white;font-size:16px;box-shadow:0 5px 15px rgba(42,171,238,0.4);}
+.login-box button::after{content:" G";font-weight:bold;}
 
 /* شريط علوي */
 .top{height:55px;background:white;display:flex;align-items:center;justify-content:space-between;padding:0 15px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-bottom:1px solid #ccc;border-radius:0 0 15px 15px}
@@ -34,7 +36,8 @@ img{display:block;}
 .chat-item{display:flex;align-items:center;padding:12px;margin-bottom:8px;background:white;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,0.05);cursor:pointer;transition:all .3s ease;}
 .chat-item:hover{transform:translateX(5px);box-shadow:0 10px 20px rgba(0,0,0,0.1);}
 .avatar{width:50px;height:50px;border-radius:50%;background:#ccc;margin-left:10px;object-fit:cover;box-shadow:0 3px 10px rgba(0,0,0,0.1);}
-.chat-name{font-weight:bold;}
+.chat-name{font-weight:bold;display:flex;align-items:center;}
+.verified{width:16px;height:16px;background:#1da1f2;color:white;font-size:12px;border-radius:50%;display:flex;justify-content:center;align-items:center;margin-left:5px;font-weight:bold;}
 .unread{background:red;color:white;border-radius:50%;padding:2px 6px;margin-left:5px;font-size:12px;}
 .last-seen{font-size:12px;color:#666;}
 
@@ -63,17 +66,25 @@ img{display:block;}
 #profilePage input[type=text],#profilePage textarea{width:100%;padding:10px;margin-bottom:15px;border-radius:12px;border:1px solid #ccc;}
 #profilePage button{width:100%;padding:12px;border:none;border-radius:12px;background:#2aabee;color:white;font-size:16px;margin-top:10px;}
 
+/* نافذة الاتصال */
+#callPanel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:15px;padding:20px;display:none;flex-direction:column;align-items:center;box-shadow:0 10px 25px rgba(0,0,0,0.2);}
+#callPanel img{width:80px;height:80px;border-radius:50%;margin-bottom:10px;}
+#callPanel h4{margin-bottom:5px;}
+#callPanel p{margin-bottom:15px;color:#555;}
+#callPanel button{padding:10px 20px;border:none;border-radius:12px;background:#2aabee;color:white;cursor:pointer;}
+
 /* أنيميشن */
 @keyframes fadeIn{0%{opacity:0;transform:translateY(10px);}100%{opacity:1;transform:translateY(0);}}
 @keyframes slideIn{0%{opacity:0;transform:translateY(100px);}100%{opacity:1;transform:translateY(0);}}
 </style>
 </head>
 <body>
+
 <!-- صفحة تسجيل الدخول -->
 <div id="page-login" class="page active">
   <div class="login-box">
     <h3>تسجيل الدخول</h3>
-    <button onclick="loginGoogle()">تسجيل دخول Google G</button>
+    <button onclick="loginGoogle()">تسجيل دخول Google</button>
   </div>
 </div>
 
@@ -123,6 +134,15 @@ img{display:block;}
   <button onclick="closeProfile()">إغلاق</button>
 </div>
 
+<!-- نافذة الاتصال -->
+<div id="callPanel">
+  <img id="callAvatar" src="#">
+  <h4 id="callName"></h4>
+  <span id="verifiedMark" class="verified" style="display:none;">✔</span>
+  <p id="callBio"></p>
+  <button onclick="closeCall()">إغلاق</button>
+</div>
+
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyAdnzO83yV5sqL6TBrhStdyoxdoKlcR6yY",
@@ -141,8 +161,14 @@ const settingsPanel=document.getElementById("settingsPanel");
 const profilePage=document.getElementById("profilePage");
 const profilePic=document.getElementById("profilePic");
 const profileName=document.getElementById("profileName");
+
+const callPanel=document.getElementById("callPanel");
+const callAvatar=document.getElementById("callAvatar");
+const callName=document.getElementById("callName");
+const callBio=document.getElementById("callBio");
+const verifiedMark=document.getElementById("verifiedMark");
+
 let currentUser=null,chattingWith=null,imageFile=null;
-let loadedUsers={}; // لتجنب تكرار الحسابات
 
 function showPage(p){[loginPage,listPage,chatPage].forEach(x=>x.classList.remove("active"));p.classList.add("active");}
 
@@ -164,16 +190,21 @@ function loginGoogle(){
 
 function loadUsers(){
   const list=document.getElementById("list");
+  list.innerHTML="";
   db.collection("users").onSnapshot(s=>{
+    let seen=new Set();
     s.forEach(d=>{
-      if(d.id!==currentUser.uid && !loadedUsers[d.id]){
+      if(d.id!==currentUser.uid && !seen.has(d.id)){
+        seen.add(d.id);
         const data=d.data();
         const div=document.createElement("div");
         div.className="chat-item";
-        div.innerHTML=`<div class="avatar" style="background-image:url('${data.photo}')"></div><div><div class="chat-name">${data.name}<span class='unread' id='unread_${d.id}'>0</span></div></div>`;
+        let verifiedHTML = (data.email==="amhmdbdallt448@gmail.com") ? "<span class='verified'>✔</span>" : "";
+        div.innerHTML=`<div class="avatar" style="background-image:url('${data.photo}')"></div>
+        <div><div class="chat-name">${data.name} ${verifiedHTML}<span class='unread' id='unread_${d.id}'>0</span></div></div>`;
         div.onclick=()=>openChat(d.id);
+        div.oncontextmenu=e=>{e.preventDefault(); showCallInfo(data);};
         list.appendChild(div);
-        loadedUsers[d.id]=true;
       }
     });
   });
@@ -243,7 +274,16 @@ function saveProfile(){
   }
 }
 function logout(){auth.signOut().then(()=>location.reload());}
+
 function callUser(){alert("ميزة الاتصال تعمل!");}
+function showCallInfo(user){
+  callAvatar.src=user.photo;
+  callName.innerText=user.name;
+  callBio.innerText=user.bio||"لا يوجد بايو";
+  verifiedMark.style.display=(user.email==="amhmdbdallt448@gmail.com")?"flex":"none";
+  callPanel.style.display="flex";
+}
+function closeCall(){callPanel.style.display="none";}
 
 auth.onAuthStateChanged(user=>{
   if(user){
